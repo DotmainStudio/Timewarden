@@ -25,6 +25,7 @@ Timewarden turns a repository into a project that *remembers*: when a session op
 | **Connection catalog** | Secret-free per-environment recipes (system, auth method, env var names, validate/explore/dry-run commands) so agents stop asking how to connect | No |
 | **Change-driven sync** | A session-start hook fingerprints the repo (and, where a read-only probe works, live warehouse metadata) and rebuilds and re-indexes only what changed. Installed and configured entirely by the agent | Only changed documents |
 | **Spec-first agent swarm** *(optional)* | A team of Claude agents (leader, explorer, implementer, reviewer, git) that implements **approved** OpenSpec changes in isolated worktrees on your subscription: approval gate, tasks ticked by a script, scenario-by-scenario review, a git agent that keeps branches, PRs and main in sync (merging only under policy), token metrics, and the Cognee memory untouched | Uses your subscription quota |
+| **Self-healing** *(optional)* | A LaunchAgent that restarts unhealthy services and re-indexes pending documents within a hard daily token budget (no tokens by default, never deletes data) | Capped, only for pending documents |
 | **Management Memory dashboard** | Read-only board: health, vectors, graph, PostgreSQL, tokens/cost, memory usage | No |
 
 Indexing new documents does consume your Claude subscription (≈ 2 calls per fragment); querying does not. The optional swarm also uses your subscription (no API key; see [`docs/SWARM_REPLICATION.md`](docs/SWARM_REPLICATION.md)).

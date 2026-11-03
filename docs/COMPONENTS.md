@@ -34,6 +34,7 @@
 | `memory_stale.py` | Detects outdated memory documents by comparing their `source_paths` with Git, without spending tokens |
 | `sync_markdown.py` | Syncs `docs/agent-memory/` and the OpenSpec specs to Cognee (incremental by hash, verifies retrieval). Indexes in small parallel batches (`--batch-size 8`, `--parallel 2`) with a background `cognify`; a failed batch does not stop the rest and interrupted documents are reconciled by search before being re-indexed |
 | `memctl.sh` | Daily operation: `up`, `stop`, `status`, `sync`, `eval`, and for data projects `graph`, `connect`, `datasync` |
+| `memory_heal.py`, `memory_heal_launchagent.sh` | Scheduled self-healing: free repairs, budgeted re-sync of pending documents, report-only findings (see `docs/operations.md`) |
 | `memory_eval.py` | Evaluates recall@5 with questions from `evals/` |
 | `cognee_adapter.py` | Cognee HTTP client (add, cognify, search, forget) |
 | `observer.sh`, `observer_launchagent.sh` | Observer: local bridge that uses your Claude subscription (`claude -p`) so Cognee can summarize and index; the LaunchAgent keeps it alive across reboots |

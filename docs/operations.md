@@ -35,3 +35,17 @@ Everything goes through `scripts/memctl.sh`. The values below were verified on 2
 
 ## Things NOT to do
 `docker compose down -v`, `forget` with `everything`, mounting `~/.cognee-plugin/observer/` (it contains the token), exposing ports outside `127.0.0.1`.
+
+## Self-healing (scheduled, budgeted)
+`scripts/memory_heal.py` runs from a LaunchAgent (`scripts/memory_heal_launchagent.sh install <repo>...`, every 60 min by default) and fixes the mechanical problems the panel reports. It is **deterministic and spends no tokens by default**.
+
+| What | How | Costs quota |
+|---|---|---|
+| A stack container, the panel or the observer is down/unhealthy | restarts only that service (never `down -v`), at most 3 times a day, then one notification | No |
+| Swarm runs stuck "running" for hours; leftover team tmux sessions | marks the runs failed; closes the sessions | No |
+| Documents pending, changed or interrupted in a configured repo | `sync_markdown.py --apply --max-docs 8`, only within the budget below | **Yes (capped)** |
+| Documents in memory with no registry entry (orphans) | reported once a day, **never deleted** | No |
+| Persistent failures | optional read-only diagnosis with the lightest model, off by default | Only if enabled |
+
+**Token budget (config `~/.config/agents_memory_system/heal.yaml`; values can be lowered, never raised past the hard caps):** `max_syncs_per_day` 2 (cap 6), `max_docs_per_sync` 8 (cap 20), `min_hours_between_syncs` 6, `max_attempts_per_item` 3 (a failing document stops being retried that day), `quota_pause_at` 0.7 (no token-spending action while the subscription utilisation reported by the swarm runs is at or above it). A repository is synced only from its default branch with no uncommitted changes to tracked files, so nothing unmerged is indexed.
+Commands: `memory_heal.py run [--dry-run]`, `status`, `config`, `add-repo <path>`; `memory_heal_launchagent.sh install|uninstall|status|dry-run|run-now`. Log and state: `~/.local/share/agents_memory_system/heal/`.
