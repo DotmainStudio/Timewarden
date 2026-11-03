@@ -27,3 +27,9 @@ STORAGE_DIR = os.environ.get("STORAGE_DIR", "/cognee-storage")
 DOCKER_PROXY_URL = os.environ.get("DOCKER_PROXY_URL", "")
 STACK_PROJECT = os.environ.get("STACK_PROJECT", "agents_memory_system")
 CHARS_PER_TOKEN = float(os.environ.get("CHARS_PER_TOKEN", "3.8"))
+
+# Swarm monitoring: dedicated READ-ONLY role (select on schema swarm only)
+SWARM_PG = dict(
+    host=PG["host"], port=PG["port"], dbname=os.environ.get("SWARM_PG_DB", PG["dbname"]),
+    user=os.environ.get("SWARM_PG_USER", "swarm_reader"), password=os.environ.get("SWARM_PG_PASSWORD", ""),
+)

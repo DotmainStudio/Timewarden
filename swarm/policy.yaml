@@ -1,0 +1,48 @@
+# Swarm token policy. Versioned: change a default only after a recorded before/after comparison
+# (swarm compare, shown in the panel efficiency tab). Values are hypotheses until measured.
+schema_version: 1
+claude_code_version: pinned in config/versions.lock    # the runner builds exactly that version
+limits:
+  max_concurrent_jobs: 2
+  max_turns: {explorer: 25, implementer: 60, reviewer: 30, leader: 40, gitops: 25}
+  timeout_minutes: {explorer: 15, implementer: 45, reviewer: 20, leader: 30, gitops: 15}
+  park_after_failed_reviews: 2
+  subagent_summary_max_chars: 2000
+gitops:
+  auto_merge: true               # false = the git agent opens/updates the PR and the user merges
+  merge_method: squash           # squash | merge
+  require_checks: true           # a failing required check blocks the merge (no checks configured = ok)
+  wait_checks_minutes: 10        # finalize waits this long for pending CI before deciding
+  check_poll_seconds: 15
+team:
+  max_teammates: 5               # agent teams are interactive-only and experimental; opt in per job with `swarm team`
+  timeout_minutes: 30
+escalation:
+  strongest_class: opus
+  allowed_when: [architecture_change, two_failed_reviews]
+roles:
+  explorer:                       # read-only, lightest class
+    model: haiku
+    effort: low
+    tools: [Read, Grep, Glob]
+    writes: false
+  implementer:
+    model: sonnet
+    effort: medium
+    tools: [Read, Grep, Glob, Edit, Write, Bash]
+    writes: true
+  reviewer:                       # read-only: can run tests through Bash but cannot edit source
+    model: sonnet
+    effort: medium
+    tools: [Read, Grep, Glob, "Bash(pytest:*)", "Bash(bash scripts/health.sh:*)", "Bash(bash scripts/check:*)", "Bash(git diff:*)", "Bash(git log:*)", "Bash(openspec validate:*)"]
+    writes: false           # also mounted read-only in the container
+  leader:                         # planning job: writes only inside the change directory (guard hook)
+    model: sonnet
+    effort: medium
+    tools: [Read, Grep, Glob, Edit, Write, Bash]
+    writes: change-dir-only
+  gitops:                         # git expert: runs on the HOST (needs the user's git/gh credentials); model only for conflicts
+    model: sonnet
+    effort: low
+    tools: [Read, Grep, Glob, Edit, "Bash(git:*)", "Bash(gh:*)"]
+    writes: true

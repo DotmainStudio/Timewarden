@@ -24,9 +24,10 @@ Timewarden turns a repository into a project that *remembers*: when a session op
 | **Data project graph** | Offline lineage graph of a dbt / Dataform / Databricks repo (what reads what, impact of a change, conventions, health checks) answered exactly by `data_graph.py`; the same facts are written as documents Cognee indexes | Only when indexing |
 | **Connection catalog** | Secret-free per-environment recipes (system, auth method, env var names, validate/explore/dry-run commands) so agents stop asking how to connect | No |
 | **Change-driven sync** | A session-start hook fingerprints the repo (and, where a read-only probe works, live warehouse metadata) and rebuilds and re-indexes only what changed. Installed and configured entirely by the agent | Only changed documents |
+| **Spec-first agent swarm** *(optional)* | A team of Claude agents (leader, explorer, implementer, reviewer, git) that implements **approved** OpenSpec changes in isolated worktrees on your subscription: approval gate, tasks ticked by a script, scenario-by-scenario review, a git agent that keeps branches, PRs and main in sync (merging only under policy), token metrics, and the Cognee memory untouched | Uses your subscription quota |
 | **Management Memory dashboard** | Read-only board: health, vectors, graph, PostgreSQL, tokens/cost, memory usage | No |
 
-Indexing new documents does consume your Claude subscription (≈ 2 calls per fragment); querying does not.
+Indexing new documents does consume your Claude subscription (≈ 2 calls per fragment); querying does not. The optional swarm also uses your subscription (no API key; see [`docs/SWARM_REPLICATION.md`](docs/SWARM_REPLICATION.md)).
 
 ## Installation in 4 commands
 ```bash
@@ -46,6 +47,7 @@ seed-bundle/seed.sh panel --yes                              # panel en http://1
 | [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) | How it works, with graphs: installation, the lifecycle of a session, security audit, deployments, OpenSpec |
 | [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) | Everything it depends on (images, versions, tools) and what leaves your machine |
 | [`docs/DATA_PROJECTS.md`](docs/DATA_PROJECTS.md) | Data projects: BigQuery, Dataform, Databricks, Snowflake, dbt; project graph, connection catalog, change-driven sync |
+| [`docs/SWARM_REPLICATION.md`](docs/SWARM_REPLICATION.md) | **The agent swarm**: what to install, how to adapt it to each project, memory, git agent, subscription token, verification and lessons from the first production pilot |
 | [`docs/OPENSPEC.md`](docs/OPENSPEC.md) | How OpenSpec directs the work and links to the memory |
 | [`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md) | Privacy, secrets, network surface, and prohibitions |
 | [`docs/architecture.md`](docs/architecture.md), [`docs/operations.md`](docs/operations.md), [`docs/continuity.md`](docs/continuity.md), [`docs/token-strategy.md`](docs/token-strategy.md), [`docs/diagrams.md`](docs/diagrams.md) | Detailed architecture, day-to-day operation, continuity between sessions, token strategy, diagrams |

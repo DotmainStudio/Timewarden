@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# `swarm` CLI entry. Usage: swarm --repo <path> <command>   (see swarm/README.md)
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 -I -c "import sys; sys.path.insert(0, '$HERE'); from swarmlib.cli import main; sys.exit(main())" "$@"

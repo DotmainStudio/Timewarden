@@ -68,6 +68,9 @@ scripts/memctl.sh eval <repo>            # with evals/cases.<project_id>.jsonl (
 ```
 Acceptance: API ready, observer reachable from the container, panel on :45876, MCP connected, briefing < 6000 characters, correct retrieval in top-5. Close with the `project-memory-handoff` skill, commit `docs/agent-memory/`, `.agent-memory/` (except `local.yaml`) and `CLAUDE.md` through the repo's normal flow, and deliver: what was installed, where, what it cost (tokens), how to disconnect (`claude plugin disable cognee-memory@cognee`, `claude mcp remove agents_cognee`) and the consumption review date (one week: `scripts/weekly_report.py`).
 
+## Phase 9 — Agent swarm (optional: only if the user asks for it)
+The swarm is NOT part of the zero-touch memory install. When requested: read `docs/SWARM_REPLICATION.md` and follow it. Order: `seed.sh swarm-init` (once per machine: schema, roles, runner image), then per project **analyse first** (`seed.sh harness <repo>` runs `install_harness.py analyze`), decide the agents with the user, and **ask whether the roles go global (`~/.claude/agents`) or inside each repo**; the installer exits 3 without `--scope`. Dry run first, then `--apply`; never apply `--cleanup` to agents the team still uses. Ask whether the git agent may merge PRs on its own (`gitops.auto_merge`). The Docker mode needs the subscription token (`claude setup-token`, then `swarm token save`); local mode does not.
+
 ## Data projects: what is automatic
 - **Graph:** `data_graph.py` rebuilds from the repo (using `manifest.json` / `dataform compile` when present). Query it instead of reading files: `data_graph.py impact|upstream|downstream|show|path|check`.
 - **Connections:** read `docs/agent-memory/connections.md`; never ask the user how to connect. `data_connect.py check` shows tools and variables on this machine.

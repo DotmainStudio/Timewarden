@@ -9,6 +9,9 @@
 #   seed.sh index <repo>                    indexes all pending documents (spends Claude tokens; the agent runs it unattended and reports the cost)
 #   seed.sh panel --yes                     starts Management Memory (included in the kit, panel/ folder) (control panel, read-only)
 #   seed.sh verify [<repo>]                 quick acceptance checks
+#   seed.sh swarm-init                      creates the swarm schema/roles in Postgres, builds the runner image (pinned version), shows `swarm doctor`
+#   seed.sh harness <repo> [--scope repo|global] [--apply] [--cleanup]
+#                                           analyses the repo FIRST (stack, agents, legacy files), asks scope (exit 3 if missing), dry run unless --apply
 # Exits with 3 if the language OR the project type (profile: dbt/dataform/snowflake/bigquery/webapp/...) is ambiguous: the agent MUST ask the user.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -120,7 +123,18 @@ verify() {
   return $BAD
 }
 
+swarm_init() {
+  "$MS/swarm/swarm" init-db && "$MS/swarm/build_runner.sh" && "$MS/swarm/swarm" doctor || true
+}
+
+harness() {
+  local repo="${1:?usage: seed.sh harness <repo> [--scope repo|global] [--apply] [--cleanup]}"; shift
+  echo "1/2 analysis (writes nothing)"; python3 -I "$MS/scripts/install_harness.py" analyze "$repo" || return $?
+  echo "2/2 install"; python3 -I "$MS/scripts/install_harness.py" install "$repo" "$@"
+}
+
 case "${1:-help}" in
+  swarm-init) swarm_init ;; harness) shift; harness "$@" ;;
   doctor) doctor ;; machine) shift; machine "$@" ;; project) shift; project "$@" ;; panel) shift; panel "$@" ;; index) shift; index "$@" ;; verify) shift; verify "$@" ;;
-  *) sed -n 2,15p "$0" ;;
+  *) sed -n 2,19p "$0" ;;
 esac

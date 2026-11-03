@@ -1,7 +1,7 @@
 # data-system-sync Specification
 
 ## Purpose
-TBD - created by archiving change data-project-graph. Update Purpose after archive.
+Keep the memory index in sync with data-project documents through change-driven synchronisation that uses tool-native exports when available and re-indexes only what changed.
 
 ## Requirements
 

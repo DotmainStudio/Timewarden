@@ -8,11 +8,15 @@ sources:
   - docs/agent-memory/**/*.md
   - openspec/specs/**/*.md          # current OpenSpec specs (if the repo uses them)
   - openspec/changes/**/*.md        # active and archived proposals
+  - ARCHITECTURE.md                 # swarm harness: stable architecture document
+  - progress/history.md             # swarm harness: durable log of merged outcomes
 exclude:
   - '**/.env*'
   - '**/credentials/**'
   - '**/*.LOCAL.md'
   - 'docs/agent-memory/handoffs/_local/**'
+  - 'progress/current.md'           # ephemeral task state: never indexed
+  - 'exploration_*'
 policy:
   cross_project_recall: false
   capture_raw_sessions: true      # true = session capture on with caps (see spec 20.1); false = off

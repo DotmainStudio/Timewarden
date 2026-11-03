@@ -69,3 +69,13 @@
 | `agents_otel_collector` | 45875 | Collects Claude Code telemetry to measure tokens |
 | `mm_app` + `mm_docker_proxy` | 45876 | Management Memory dashboard and a read-only proxy to the Docker engine |
 Outside Docker: the **observer** (127.0.0.1:8017) and the optional LaunchAgents. `agents_memory_system` is the internal name of the Docker Compose project (it identifies volumes and network).
+
+## Agent swarm (optional)
+| Path | What it is |
+|---|---|
+| `swarm/` | The `swarm` CLI and dispatcher (standard-library Python): approval gate, jobs, git agent, post-merge, team mode, token tools |
+| `swarm/runner/` | Hardened runner image (pinned Claude Code), guard hooks, event capture, on-demand recall script |
+| `swarm/policy.yaml` | Model class, effort, tools and limits per role; git agent and team settings |
+| `swarm/schema.sql` | Postgres schema `swarm` (runs, events, verdicts, approvals, tasks…) with a writer and a select-only reader role |
+| `scripts/install_harness.py`, `templates/harness/` | Project analysis and the non-invasive harness installer (roles, `ARCHITECTURE.md`, `progress/`, health script) |
+| `panel/` page **Swarm** | Read-only view: agents and their tasks, pending work, change board, verdicts, efficiency |

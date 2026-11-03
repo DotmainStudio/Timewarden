@@ -1,7 +1,7 @@
 # data-project-graph Specification
 
 ## Purpose
-TBD - created by archiving change data-project-graph. Update Purpose after archive.
+Build an offline lineage graph for data projects (dbt, Dataform, Databricks) so structure and impact can be answered exactly, without spending model tokens.
 
 ## Requirements
 

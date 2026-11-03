@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import cognee_client as cognee
-from . import config, dockerapi, kb, observer, otel, pg, resources, storage, usage, vectors
+from . import config, dockerapi, kb, observer, otel, pg, resources, storage, swarm, usage, vectors
 
 app = FastAPI(title="Memory Inspector", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -83,6 +83,42 @@ def overview():
         "observer_usage": {"by_day": obs.get("by_day", [])[-14:], "total": obs.get("total", {})},
         "otel_usage": {"by_day": otel.summary(days=14)["by_day"], "total": otel.summary(days=14)["total"]},
     }
+
+
+# -- Swarm (read-only, role swarm_reader) --------------------------------------
+@app.get("/api/swarm/board")
+def swarm_board():
+    return swarm.board()
+
+
+@app.get("/api/swarm/agents")
+def swarm_agents():
+    return swarm.agents()
+
+
+@app.get("/api/swarm/pending")
+def swarm_pending():
+    return swarm.pending()
+
+
+@app.get("/api/swarm/runs/{run_id}")
+def swarm_run(run_id: int):
+    return swarm.run_detail(run_id)
+
+
+@app.get("/api/swarm/verdicts")
+def swarm_verdicts():
+    return {"verdicts": swarm.verdicts(), "health": swarm.health_history()}
+
+
+@app.get("/api/swarm/efficiency")
+def swarm_efficiency():
+    return swarm.efficiency()
+
+
+@app.get("/api/swarm/compare")
+def swarm_compare(a: int, b: int):
+    return swarm.compare(a, b)
 
 
 @app.get("/api/datasets")

@@ -1,7 +1,7 @@
 # data-connection-catalog Specification
 
 ## Purpose
-TBD - created by archiving change data-project-graph. Update Purpose after archive.
+Describe how data projects connect to their systems through a secret-free connection catalog that is discovered from the user's own authenticated tools and enables read-only live metadata only where a probe works.
 
 ## Requirements
 

@@ -146,6 +146,11 @@ const GLOSSARY = [
   ["MCP", "The local «plug» through which Claude Code queries the memory with tools (recall, remember…)."],
   ["Session", "A conversation with Claude Code. Cognee can save its history to remember it later."],
   ["Briefing", "Automatic summary (goal, decisions, rules, pending items) that is loaded when a session opens without querying Cognee. Costs ~1 000 tokens."],
+  ["Swarm", "A team of specialised Claude agents that implement approved OpenSpec changes in isolated worktrees, on your subscription."],
+  ["Change (OpenSpec)", "A reviewed plan: proposal, spec scenarios, design and tasks. Nothing is implemented until you approve it."],
+  ["Scenario", "A WHEN/THEN example in a spec. The reviewer must find a test or evidence for every one."],
+  ["Worktree", "A separate checkout of the repo on its own branch, so each change is isolated."],
+  ["Verdict", "The reviewer's structured result per change. Only a script, after a passing verdict, marks a change done."],
   ["Swap", "Memory borrowed from disk when RAM fills up; if it grows a lot, the Mac is running tight."],
   ["Footprint (space)", "Everything a dataset occupies: database + graph + raw text."],
 ];
@@ -504,9 +509,105 @@ pages.guide = { title: "Guide and glossary", sub: "Everything you need to read t
   ...section("What each section does"), h("div", { class: "grid two" }, [["Overview", "Health and key numbers."], ["Knowledge bases", "Size and cost per project; warnings to decide what to compact."], ["Vectors", "Which fingerprints are stored and how much they weigh."], ["Graph", "The concept map."], ["PostgreSQL", "The database, read-only."], ["Search", "Test retrieval."], ["Memory usage", "When it is queried and whether it responds: proof that it works."], ["System resources", "Snapshot of the Mac's load (on demand) and of Docker."], ["Tokens and cost", "AI consumption, from three sources."], ["API and containers", "Who calls Cognee and the health of the services."]].map(([a, b]) => h("div", { class: "card" }, h("b", {}, a), h("div", { class: "muted" }, b)))),
   ...section("Glossary"), h("div", { class: "card" }, h("dl", { class: "gloss" }, GLOSSARY.flatMap(([t, d]) => [h("dt", {}, t), h("dd", {}, d)])))) };
 
+
+/* ── Swarm: agents, assigned tasks, pending work, board, verdicts, efficiency (read-only) ── */
+const STATE_TONE = { running: "ok", queued: "brand", succeeded: "ok", failed: "bad", timeout: "warn", parked: "bad", cancelled: "", awaiting_approval: "warn", approved: "brand", in_progress: "ok", review: "brand", done: "ok", needs_attention: "warn", draft: "" };
+const sp = (v) => pill(String(v || "—").replace(/_/g, " "), STATE_TONE[v] || "");
+const dur = (a, b) => { if (!a) return "—"; const s = ((b ? new Date(b) : new Date()) - new Date(a)) / 1000; return s < 90 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`; };
+const SWARM_TABS = [["agents", "Agents and tasks"], ["pending", "Pending work"], ["board", "Change board"], ["verdicts", "Verdicts and health"], ["efficiency", "Efficiency"]];
+let swarmTab = "agents";
+
+async function swarmAgents() {
+  const o = await api("/swarm/agents"), root = h("div", {});
+  const risk = { low: "ok", medium: "warn", high: "bad", unknown: "" }[o.quota_risk];
+  root.append(h("div", { class: "grid" },
+    kpi({ label: "Active agents", value: num(o.active.length), meta: "running or queued now", tip: "One row per job the dispatcher is running. Concurrency is capped (default 2)." }),
+    kpi({ label: "Quota risk (5 h window)", value: h("span", {}, sp(o.quota_risk)), meta: o.quota_utilization == null ? "no reading yet" : `${(o.quota_utilization * 100).toFixed(0)}% of the subscription window`, tip: "Taken from the utilisation figure Claude Code reports for your subscription. Above 85% pause the swarm (swarm pause)." }),
+    kpi({ label: "Recent runs", value: num(o.recent.length), meta: `${o.recent.filter((r) => r.state === "succeeded").length} succeeded` })));
+  root.append(...section("Who is doing what right now", "Each active agent with the task it is assigned to."));
+  root.append(table([
+    { t: "Run", f: (r) => `#${r.id}` }, { t: "Project", k: "project_id" }, { t: "Agent", f: (r) => h("span", {}, h("b", {}, r.role), " ", pill(`${r.model || "?"}${r.effort ? " · " + r.effort : ""}`)) },
+    { t: "Change", k: "change_id" }, { t: "Assigned task", f: (r) => r.task_id ? `${r.task_id} — ${r.task_title || ""}` : r.kind }, { t: "State", f: (r) => sp(r.state) },
+    { t: "Running", f: (r) => dur(r.started_at) }, { t: "Turns", n: 1, f: (r) => num(r.turns) }], o.active, { empty: "No agent is running. Start one with `swarm implement <change>`.", onrow: (r) => runDetail(r.id) }));
+  root.append(...section("Recent runs", "Click a row for its events, health checks and memory recalls."));
+  root.append(table([
+    { t: "Run", f: (r) => `#${r.id}` }, { t: "Project", k: "project_id" }, { t: "Agent", f: (r) => `${r.role} · ${r.model || "?"}` }, { t: "Change", k: "change_id" }, { t: "Task", k: "task_id" },
+    { t: "Result", f: (r) => sp(r.state) }, { t: "Took", f: (r) => dur(r.started_at, r.ended_at) }, { t: "Tokens in/out", n: 1, f: (r) => `${num(r.input_tokens)} / ${num(r.output_tokens)}` }], o.recent, { onrow: (r) => runDetail(r.id) }));
+  root.append(h("div", { id: "runBox" }));
+  return root;
+}
+async function runDetail(id) {
+  const d = await api(`/swarm/runs/${id}`), box = $("#runBox"); if (!box) return;
+  box.replaceChildren(h("div", { class: "card", style: "margin-top:14px" }, h("h3", {}, `Run #${id} — ${d.run.role} (${d.run.state})`),
+    h("p", { class: "hint" }, d.run.summary || d.run.progress || "No summary recorded."),
+    h("h4", {}, "Events"), table([{ t: "When", f: (e) => ago(e.ts) }, { t: "Type", k: "type" }, { t: "Tool", k: "tool" }, { t: "OK", f: (e) => e.ok == null ? "—" : e.ok ? pill("ok", "ok") : pill("blocked/failed", "bad") }, { t: "Detail", f: (e) => h("code", {}, JSON.stringify(e.detail).slice(0, 140)) }], d.events),
+    h("h4", {}, "Memory recalls"), table([{ t: "Dataset", k: "dataset" }, { t: "Results", n: 1, k: "results" }, { t: "Used", f: (r) => r.rejected ? pill("rejected (cross-project)", "bad") : r.used ? pill("used", "ok") : pill("not used", "warn") }], d.recalls, { empty: "No recalls in this run." }),
+    h("h4", {}, "Health checks"), table([{ t: "When", f: (e) => ago(e.ts) }, { t: "Result", f: (e) => e.ok ? pill("pass", "ok") : pill("fail", "bad") }, { t: "Output (tail)", f: (e) => h("code", {}, (e.output_tail || "").slice(-160)) }], d.health, { empty: "No health checks." })));
+  box.scrollIntoView({ behavior: "smooth" });
+}
+async function swarmPending() {
+  const rows = await api("/swarm/pending"), root = h("div", {});
+  const byChange = {}; rows.forEach((r) => (byChange[`${r.project_id} / ${r.change_id}`] ||= []).push(r));
+  root.append(intro("Pending work", "Every unchecked task of every OpenSpec change, in the order the swarm will execute them. Tasks of one change run in sequence; different changes can run in parallel.", "A task is ticked only after its own verification (and the health script) passed. Awaiting approval means nothing runs until you run `swarm approve <change>`."));
+  root.append(h("div", { class: "grid" }, kpi({ label: "Pending tasks", value: num(rows.length) }), kpi({ label: "Changes with work left", value: num(Object.keys(byChange).length) }),
+    kpi({ label: "Assigned right now", value: num(rows.filter((r) => r.assigned_run).length), meta: "being worked by an agent" })));
+  for (const [k, items] of Object.entries(byChange)) {
+    root.append(h("h2", {}, k, " ", sp(items[0].change_status)));
+    root.append(table([{ t: "Task", k: "task_id" }, { t: "Group", k: "group_title" }, { t: "What", k: "title" }, { t: "Verification", f: (r) => h("code", {}, r.verification || "health script") },
+      { t: "Assigned", f: (r) => r.assigned_run ? pill(`${r.assigned_role} · run #${r.assigned_run}`, "ok") : pill("not started") }], items));
+  }
+  if (!rows.length) root.append(h("div", { class: "empty" }, "Nothing pending. Run `swarm sync-state` in a project to load its changes."));
+  return root;
+}
+async function swarmBoard() {
+  const o = await api("/swarm/board"), root = h("div", {});
+  root.append(intro("Change board", "Each OpenSpec change moves left to right: awaiting approval → approved → in progress → review → done. Parked means two failed reviews: it needs you."));
+  const cols = ["awaiting_approval", "approved", "in_progress", "review", "done", "parked", "needs_attention"];
+  root.append(h("div", { class: "board" }, cols.map((c) => h("div", { class: "card col" }, h("h3", {}, c.replace(/_/g, " "), " ", pill(String((o.columns[c] || []).length))),
+    (o.columns[c] || []).map((x) => h("div", { class: "chg" }, h("b", {}, x.change_id), h("div", { class: "muted small" }, x.project_id), h("div", { class: "small" }, `${x.tasks_done}/${x.tasks_total} tasks · ${x.scenarios} scenarios`)))))));
+  return root;
+}
+async function swarmVerdicts() {
+  const o = await api("/swarm/verdicts"), root = h("div", {});
+  root.append(...section("Reviewer verdicts", "A change is done only when every scenario has evidence and the health script passes."));
+  root.append(table([{ t: "When", f: (r) => ago(r.created_at) }, { t: "Project", k: "project_id" }, { t: "Change", k: "change_id" }, { t: "Verdict", f: (r) => r.passed ? pill("pass", "ok") : pill("fail", "bad") },
+    { t: "Scenarios", f: (r) => { const s = JSON.parse(r.scenarios || "[]"); return `${s.filter((x) => x.status === "pass").length}/${s.length} pass`; } },
+    { t: "Findings", f: (r) => JSON.parse(r.findings || "[]").slice(0, 2).join(" · ") || "—" }], o.verdicts, { empty: "No verdicts yet." }));
+  root.append(...section("Health-script history"));
+  root.append(table([{ t: "When", f: (r) => ago(r.ts) }, { t: "Project", k: "project_id" }, { t: "Change", k: "change_id" }, { t: "Result", f: (r) => r.ok ? pill("pass", "ok") : pill("fail", "bad") }, { t: "Run", f: (r) => r.run_id ? `#${r.run_id}` : "—" }], o.health, { empty: "No health runs yet." }));
+  return root;
+}
+async function swarmEfficiency() {
+  const o = await api("/swarm/efficiency"), root = h("div", {});
+  root.append(intro("Token efficiency", "Where the subscription quota goes: per role, how many tokens, how much was served from cache, turns and how full the context got. Defaults change only after a before/after comparison.", "Cache share = cache-read tokens / all input tokens. Context at end = size of the last request. Policy thresholds from outside sources are hypotheses until this page confirms them."));
+  root.append(...section("By role"));
+  root.append(table([{ t: "Role", k: "role" }, { t: "Runs", n: 1, k: "runs" }, { t: "Input", n: 1, f: (r) => num(r.input_tokens) }, { t: "Output", n: 1, f: (r) => num(r.output_tokens) },
+    { t: "Cache share", n: 1, f: (r) => `${(r.cache_read_share * 100).toFixed(0)}%`, tip: "Higher is cheaper: stable prompts get reused." }, { t: "Avg turns", n: 1, k: "avg_turns" }, { t: "Context at end", n: 1, f: (r) => num(r.avg_context_end) },
+    { t: "Retries", n: 1, k: "retries" }, { t: "Failed", n: 1, k: "bad" }], o.by_role, { empty: "No finished runs yet." }));
+  root.append(h("div", { class: "grid two", style: "margin-top:14px" },
+    h("div", { class: "card" }, h("h3", {}, "Model mix"), hbars(o.models.map((m) => ({ l: m.model, v: m.runs })))),
+    h("div", { class: "card" }, h("h3", {}, "Memory usefulness"), table([{ t: "Run", f: (r) => `#${r.run_id}` }, { t: "Recalls", n: 1, k: "recalls" }, { t: "Used", n: 1, k: "used" }, { t: "Flag", f: (r) => r.flag === "unused" ? pill("unused recalls", "warn") : pill("ok", "ok") }], o.recalls, { empty: "No recalls logged." }))));
+  root.append(...section("Compare two runs", "Pick two runs of the same task under different policies."));
+  const a = h("input", { type: "number", placeholder: "run A" }), b = h("input", { type: "number", placeholder: "run B" }), out = h("div", {});
+  root.append(h("div", { class: "row" }, a, b, h("button", { onclick: async () => { try { const c = await api(`/swarm/compare?a=${a.value}&b=${b.value}`);
+    const f = [["role"], ["model"], ["effort"], ["state"], ["turns"], ["input_tokens"], ["output_tokens"], ["cache_read_tokens"], ["policy_hash"]];
+    out.replaceChildren(table([{ t: "Metric", f: (r) => r[0] }, { t: `Run #${c.a.id}`, f: (r) => String(c.a[r[0]] ?? "—") }, { t: `Run #${c.b.id}`, f: (r) => String(c.b[r[0]] ?? "—") }], f)); } catch (e) { out.replaceChildren(fail(e)); } } }, "Compare")), out);
+  root.append(...section("Finished runs"));
+  root.append(table([{ t: "Run", f: (r) => `#${r.id}` }, { t: "Role", k: "role" }, { t: "Model", f: (r) => `${r.model || "?"}${r.effort ? " · " + r.effort : ""}` }, { t: "State", f: (r) => sp(r.state) }, { t: "Turns", n: 1, k: "turns" },
+    { t: "In", n: 1, f: (r) => num(r.input_tokens) }, { t: "Out", n: 1, f: (r) => num(r.output_tokens) }, { t: "Cache read", n: 1, f: (r) => num(r.cache_read_tokens) }, { t: "Policy", f: (r) => h("code", {}, r.policy_hash || "—") }], o.runs));
+  return root;
+}
+pages.swarm = { title: "Swarm", sub: "What the agents are doing, what is assigned to them and what is still pending.", icon: "layers", run: async () => {
+  const body = h("div", {}), tabs = h("div", { class: "tabs" }, SWARM_TABS.map(([k, n]) => h("button", { class: "tab" + (k === swarmTab ? " on" : ""), onclick: async (e) => { swarmTab = k; tabs.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === e.currentTarget)); await load(); } }, n)));
+  const fns = { agents: swarmAgents, pending: swarmPending, board: swarmBoard, verdicts: swarmVerdicts, efficiency: swarmEfficiency };
+  const load = async () => { body.replaceChildren(loading()); try { body.replaceChildren(await fns[swarmTab]()); } catch (e) { body.replaceChildren(fail(e)); } };
+  await load();
+  return h("div", {}, h("div", { class: "callout", style: "margin-bottom:12px" }, icon("info", 20), h("div", {}, h("b", {}, "Read-only"), h("p", {}, "This page cannot start, stop or approve anything. Use the `swarm` command; the panel only shows the database."))), tabs, body);
+} };
+
 /* ── navigation and theme ── */
-const NAV = [["General", ["overview"]], ["Knowledge", ["knowledge", "vectors", "graph", "search"]], ["Data", ["postgres", "sync"]], ["Consumption and health", ["usage", "resources", "tokens", "calls"]], ["Help", ["guide"]]];
-const NAMES = { overview: "Overview", knowledge: "Knowledge bases", vectors: "Vectors", graph: "Graph", search: "Search", postgres: "PostgreSQL", sync: "Synchronization", usage: "Memory usage", resources: "System resources", tokens: "Tokens and cost", calls: "API and containers", guide: "Guide and glossary" };
+const NAV = [["General", ["overview"]], ["Knowledge", ["knowledge", "vectors", "graph", "search"]], ["Data", ["postgres", "sync"]], ["Agents", ["swarm"]], ["Consumption and health", ["usage", "resources", "tokens", "calls"]], ["Help", ["guide"]]];
+const NAMES = { overview: "Overview", knowledge: "Knowledge bases", vectors: "Vectors", graph: "Graph", search: "Search", postgres: "PostgreSQL", sync: "Synchronization", usage: "Memory usage", resources: "System resources", tokens: "Tokens and cost", calls: "API and containers", guide: "Guide and glossary", swarm: "Swarm" };
 function themeBtn() {
   const dark = document.documentElement.dataset.theme === "dark";
   return h("button", { class: "ghost", id: "themeBtn", title: "Change theme", "aria-label": "Change theme", onclick: () => { const d = document.documentElement.dataset.theme !== "dark"; document.documentElement.dataset.theme = d ? "dark" : "light"; try { localStorage.setItem("mm-theme", d ? "dark" : "light"); } catch (_) { /* no storage */ } $("#themeBtn").replaceWith(themeBtn()); } }, icon(dark ? "sun" : "moon", 15));

@@ -78,3 +78,13 @@ dl.gloss{display:grid;grid-template-columns:200px 1fr;gap:0;margin:0}dl.gloss dt
 .meter-top{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px}.meter-bar{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
 .meter-bar i{display:block;height:100%;background:var(--brand);border-radius:99px;transition:width .4s}.meter-bar i.warn{background:var(--warn)}.meter-bar i.bad{background:var(--bad)}.meter .small{margin-top:6px}
 svg.line{width:100%;height:110px;display:block;margin-top:8px}
+
+/* swarm */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:9px 12px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:start}
+.board .col h3{font-size:13px;text-transform:capitalize;margin:0 0 8px;display:flex;gap:6px;align-items:center}
+.chg{padding:8px 10px;margin:6px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.row input{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);width:120px}
+.row button{padding:7px 14px;border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:#fff;font-weight:600;cursor:pointer}

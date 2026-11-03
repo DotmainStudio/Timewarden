@@ -11,3 +11,4 @@ analytics/out/
 deploy/docker/.env
 dist/
 panel/.env
+settings.local.json
