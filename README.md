@@ -49,6 +49,7 @@ seed-bundle/seed.sh panel --yes                              # panel en http://1
 | [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) | Everything it depends on (images, versions, tools) and what leaves your machine |
 | [`docs/DATA_PROJECTS.md`](docs/DATA_PROJECTS.md) | Data projects: BigQuery, Dataform, Databricks, Snowflake, dbt; project graph, connection catalog, change-driven sync |
 | [`docs/SWARM_REPLICATION.md`](docs/SWARM_REPLICATION.md) | **The agent swarm**: what to install, how to adapt it to each project, memory, git agent, subscription token, verification and lessons from the first production pilot |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | **How to contribute**: feature branches and pull requests only, never directly to `main` |
 | [`docs/OPENSPEC.md`](docs/OPENSPEC.md) | How OpenSpec directs the work and links to the memory |
 | [`docs/SECURITY_AND_PRIVACY.md`](docs/SECURITY_AND_PRIVACY.md) | Privacy, secrets, network surface, and prohibitions |
 | [`docs/architecture.md`](docs/architecture.md), [`docs/operations.md`](docs/operations.md), [`docs/continuity.md`](docs/continuity.md), [`docs/token-strategy.md`](docs/token-strategy.md), [`docs/diagrams.md`](docs/diagrams.md) | Detailed architecture, day-to-day operation, continuity between sessions, token strategy, diagrams |

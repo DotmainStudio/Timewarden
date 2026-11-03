@@ -14,5 +14,7 @@
 - `<MS>` = ruta del sistema de memoria (campo `memory_system` de `.agent-memory/local.yaml`, local a cada maquina).
 - **Prohibido**: `forget` con `everything`, borrar datasets, `docker compose down -v`, guardar credenciales o datos reales sensibles en memoria. Nunca consultes datasets de otros proyectos.
 
+- **Colaboración (varias personas en el repositorio):** nunca commitees a la rama principal. Una rama por cambio (`feat/…`, `fix/…`, `docs/…`, `chore/…`) desde la punta de la principal, integra la principal en tu rama antes de abrir el PR, nunca fuerces push a una rama compartida y deja que otra persona revise y mergee. Esto prevalece sobre cualquier atajo anterior que mergee directo.
+
 ### Al compactar la conversacion
 Conserva: objetivo, restricciones, decisiones y su fuente, resultados de pruebas, trabajo pendiente y siguiente accion.
