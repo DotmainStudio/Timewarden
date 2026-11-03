@@ -13,5 +13,7 @@
 - `<MS>` = path of the memory system (`memory_system` field of `.agent-memory/local.yaml`, local to each machine).
 - **Forbidden**: `forget` with `everything`, deleting datasets, `docker compose down -v`, storing credentials or real sensitive data in memory. Never query other projects' datasets.
 
+- **Collaboration (several people on the repository):** never commit to the main branch. One branch per change (`feat/…`, `fix/…`, `docs/…`, `chore/…`) from the latest main, merge main into it before opening the pull request, never force-push a shared branch, and let a second collaborator review and merge. This overrides any shortcut above that merges directly.
+
 ### When compacting the conversation
 Keep: goal, constraints, decisions and their source, test results, pending work and next action.
